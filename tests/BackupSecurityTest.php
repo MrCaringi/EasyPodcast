@@ -53,6 +53,9 @@ test('createDatabaseSnapshot crea una copia integra incluso con transacciones en
         $pdo->exec('PRAGMA journal_mode = WAL');
         $pdo->exec('CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT)');
         $pdo->exec("INSERT INTO items VALUES (1, 'item1')");
+        $reader = openPodcastDatabase($sourceDb);
+        $reader->beginTransaction();
+        $reader->query('SELECT * FROM items')->fetchAll();
         $pdo->exec("INSERT INTO items VALUES (2, 'item2')");
 
         $ok = createDatabaseSnapshot($sourceDb, $snapshotDb);
@@ -63,8 +66,9 @@ test('createDatabaseSnapshot crea una copia integra incluso con transacciones en
         $checkPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $count = (int) $checkPdo->query('SELECT COUNT(*) FROM items')->fetchColumn();
         assert_eq(2, $count, 'La instantánea no contiene todas las filas comprometidas');
+        assert_eq('ok', $checkPdo->query('PRAGMA integrity_check')->fetchColumn());
     } finally {
-        unset($pdo, $checkPdo);
+        unset($reader, $pdo, $checkPdo);
         foreach ([$sourceDb, $snapshotDb] as $file) {
             if (file_exists($file)) { @unlink($file); }
             if (file_exists($file . '-wal')) { @unlink($file . '-wal'); }
@@ -73,7 +77,7 @@ test('createDatabaseSnapshot crea una copia integra incluso con transacciones en
     }
 });
 
-test('createDatabaseSnapshot no utiliza copy inseguro y limpia destino ante error', function () {
+test('createDatabaseSnapshot limpia destino cuando el origen no existe', function () {
     $nonExistent = sys_get_temp_dir() . '/ep_non_existent_' . bin2hex(random_bytes(6)) . '.sqlite';
     $targetDb = tempnam(sys_get_temp_dir(), 'ep_snap_err_');
 
@@ -82,5 +86,69 @@ test('createDatabaseSnapshot no utiliza copy inseguro y limpia destino ante erro
     assert_true(!file_exists($targetDb), 'El destino residual no fue eliminado');
 });
 
+test('createDatabaseSnapshot rechaza el origen como destino sin modificarlo', function () {
+    $source = tempnam(sys_get_temp_dir(), 'ep_snap_same_');
+    try {
+        file_put_contents($source, 'contenido que debe conservarse');
+        assert_true(!createDatabaseSnapshot($source, $source));
+        assert_eq('contenido que debe conservarse', file_get_contents($source));
+    } finally {
+        unlink($source);
+    }
+});
 
+test('createDatabaseSnapshot falla sin dejar copia de una base corrupta', function () {
+    if (!in_array('sqlite', PDO::getAvailableDrivers(), true)) { return; }
+    $source = tempnam(sys_get_temp_dir(), 'ep_snap_invalid_');
+    $target = tempnam(sys_get_temp_dir(), 'ep_snap_partial_');
+    try {
+        file_put_contents($source, str_repeat('not a sqlite database', 300));
+        assert_true(!createDatabaseSnapshot($source, $target));
+        assert_true(!file_exists($target));
+    } finally {
+        foreach ([$source, $target] as $file) {
+            foreach (['', '-wal', '-shm', '-journal'] as $suffix) {
+                if (is_file($file . $suffix)) { unlink($file . $suffix); }
+            }
+        }
+    }
+});
 
+foreach ([false, true] as $pdoOnly) {
+    test($pdoOnly ? 'VACUUM INTO recupera un destino parcial e incluye el WAL' : 'export_db descarga una instantánea WAL y elimina temporales', function () use ($pdoOnly) {
+        if (!in_array('sqlite', PDO::getAvailableDrivers(), true)) { return; }
+        $root = sys_get_temp_dir() . '/ep_export_' . bin2hex(random_bytes(6));
+        mkdir($root, 0700);
+        $source = $root . '/source.db';
+        $output = $root . '/download.db';
+        try {
+            $pdo = openPodcastDatabase($source);
+            $pdo->exec('PRAGMA journal_mode=WAL');
+            $pdo->exec('CREATE TABLE items (id INTEGER PRIMARY KEY)');
+            $pdo->exec('INSERT INTO items VALUES (1)');
+            $reader = openPodcastDatabase($source);
+            $reader->beginTransaction();
+            $reader->query('SELECT * FROM items')->fetchAll();
+            $pdo->exec('INSERT INTO items VALUES (2)');
+
+            if ($pdoOnly) {
+                file_put_contents($output, 'restos de un backup nativo fallido');
+                assert_true(createDatabaseSnapshotWithPdo($source, $output));
+            } else {
+                $command = [PHP_BINARY, '-d', 'sys_temp_dir=' . $root, __DIR__ . '/fixtures/backup_export.php', $source];
+                $process = proc_open($command, [0 => ['pipe', 'r'], 1 => ['file', $output, 'w'], 2 => ['file', $root . '/stderr', 'w']], $pipes);
+                assert_true(is_resource($process));
+                fclose($pipes[0]);
+                assert_eq(0, proc_close($process), (string) file_get_contents($root . '/stderr'));
+            }
+            assert_eq([], glob($root . '/ep_bak_*'));
+            $check = openPodcastDatabase($output);
+            assert_eq('ok', $check->query('PRAGMA integrity_check')->fetchColumn());
+            assert_eq(2, (int) $check->query('SELECT COUNT(*) FROM items')->fetchColumn());
+        } finally {
+            unset($check, $reader, $pdo);
+            foreach (glob($root . '/*') ?: [] as $file) { unlink($file); }
+            rmdir($root);
+        }
+    });
+}

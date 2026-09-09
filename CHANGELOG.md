@@ -2,6 +2,7 @@
 
 ## Siguiente release
 
+- **Robustez de backups**: limpia el intento nativo fallido antes de usar `VACUUM INTO`, protege el origen frente a destinos idénticos y permite completar la limpieza temporal aunque se cancele la descarga.
 - **Concurrencia de escritura en SQLite**: activa el modo WAL (*Write-Ahead Logging*) y `synchronous = NORMAL` mediante la migración v28, permitiendo lecturas y escrituras simultáneas sin bloqueos mutuos.
 - **Tolerancia a contención (`busy_timeout`)**: configura una espera automática de hasta 5 segundos en `openPodcastDatabase()` y en las migraciones de base de datos para absorber picos concurrentes, adoptándose en los puntos de entrada principales (`track.php`, `feed.php`, la API REST y la redirección canónica).
 - **Descargas y analíticas optimizadas**: `track.php` utiliza la conexión centralizada con reintentos y reduce la contención ejecutando la purga de estadísticas antiguas de forma probabilística en lugar de en cada petición.

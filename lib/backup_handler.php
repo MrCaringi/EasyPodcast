@@ -503,6 +503,10 @@ function importZipIntoMedia(string $uploadedPath, string $projectRoot): array
  */
 function createDatabaseSnapshot(string $dbPath, string $targetPath): bool
 {
+    if (realpath($dbPath) !== false && realpath($dbPath) === realpath($targetPath)) {
+        return false;
+    }
+
     if (file_exists($targetPath)) {
         @unlink($targetPath);
     }
@@ -513,33 +517,60 @@ function createDatabaseSnapshot(string $dbPath, string $targetPath): bool
 
     // 1. Snapshot online nativo con SQLite3::backup (API recomendada por SQLite para modo WAL)
     if (class_exists('SQLite3')) {
+        $sourceDb = null;
+        $targetDb = null;
         try {
             $sourceDb = new SQLite3($dbPath, SQLITE3_OPEN_READONLY);
+            $sourceDb->enableExceptions(true);
             $sourceDb->busyTimeout(5000);
             $targetDb = new SQLite3($targetPath, SQLITE3_OPEN_READWRITE | SQLITE3_OPEN_CREATE);
+            $targetDb->enableExceptions(true);
             $targetDb->busyTimeout(5000);
             $ok = $sourceDb->backup($targetDb);
-            $sourceDb->close();
-            $targetDb->close();
+            clearstatcache(true, $targetPath);
             if ($ok && file_exists($targetPath) && filesize($targetPath) > 0) {
                 return true;
             }
         } catch (Throwable $e) {
             error_log('Error en SQLite3::backup snapshot: ' . $e->getMessage());
+        } finally {
+            $sourceDb?->close();
+            $targetDb?->close();
         }
     }
 
-    // 2. Snapshot atómico con VACUUM INTO desde PDO
+    return createDatabaseSnapshotWithPdo($dbPath, $targetPath);
+}
+
+/** Alternativa al backup nativo; también descarta su posible destino parcial. */
+function createDatabaseSnapshotWithPdo(string $dbPath, string $targetPath): bool
+{
+    if (realpath($dbPath) !== false && realpath($dbPath) === realpath($targetPath)) {
+        return false;
+    }
+
+    // VACUUM INTO exige un destino vacío: descartar el intento nativo fallido.
+    if (file_exists($targetPath) && !unlink($targetPath)) {
+        return false;
+    }
+
+    if (!is_file($dbPath)) {
+        return false;
+    }
+
+    // Snapshot atómico con VACUUM INTO desde PDO.
     try {
         $pdo = openPodcastDatabase($dbPath);
-        $quoted = $pdo->quote($targetPath);
-        $pdo->exec("VACUUM INTO {$quoted}");
-        unset($pdo);
+        $stmt = $pdo->prepare('VACUUM INTO :target');
+        $stmt->execute([':target' => $targetPath]);
+        clearstatcache(true, $targetPath);
         if (file_exists($targetPath) && filesize($targetPath) > 0) {
             return true;
         }
     } catch (Throwable $e) {
         error_log('Error en VACUUM INTO snapshot: ' . $e->getMessage());
+    } finally {
+        unset($stmt, $pdo);
     }
 
     // Si fallan las instantáneas atómicas, se limpia cualquier archivo residual y se falla
@@ -572,6 +603,8 @@ function loadBackupsData(string $dbPath, string $projectRoot): array
                 $error = __('No se pudo generar la instantánea de la base de datos.');
             } else {
                 $exported = false;
+                // Completar la limpieza aunque el cliente cancele la descarga.
+                $previousIgnoreAbort = ignore_user_abort(true);
                 try {
                     if (!createDatabaseSnapshot($dbPath, $tmpSnapshot)) {
                         $error = __('No se pudo generar la instantánea de la base de datos.');
@@ -589,6 +622,7 @@ function loadBackupsData(string $dbPath, string $projectRoot): array
                     if (file_exists($tmpSnapshot)) {
                         @unlink($tmpSnapshot);
                     }
+                    ignore_user_abort((bool) $previousIgnoreAbort);
                 }
 
                 if ($exported) {
