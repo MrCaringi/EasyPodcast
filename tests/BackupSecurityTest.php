@@ -73,4 +73,14 @@ test('createDatabaseSnapshot crea una copia integra incluso con transacciones en
     }
 });
 
+test('createDatabaseSnapshot no utiliza copy inseguro y limpia destino ante error', function () {
+    $nonExistent = sys_get_temp_dir() . '/ep_non_existent_' . bin2hex(random_bytes(6)) . '.sqlite';
+    $targetDb = tempnam(sys_get_temp_dir(), 'ep_snap_err_');
+
+    $ok = createDatabaseSnapshot($nonExistent, $targetDb);
+    assert_true(!$ok, 'createDatabaseSnapshot debió retornar false con archivo inexistente');
+    assert_true(!file_exists($targetDb), 'El destino residual no fue eliminado');
+});
+
+
 

@@ -503,12 +503,12 @@ function importZipIntoMedia(string $uploadedPath, string $projectRoot): array
  */
 function createDatabaseSnapshot(string $dbPath, string $targetPath): bool
 {
-    if (!is_file($dbPath)) {
-        return false;
-    }
-
     if (file_exists($targetPath)) {
         @unlink($targetPath);
+    }
+
+    if (!is_file($dbPath)) {
+        return false;
     }
 
     // 1. Snapshot online nativo con SQLite3::backup (API recomendada por SQLite para modo WAL)
@@ -542,15 +542,13 @@ function createDatabaseSnapshot(string $dbPath, string $targetPath): bool
         error_log('Error en VACUUM INTO snapshot: ' . $e->getMessage());
     }
 
-    // 3. Fallback: forzar checkpoint y copiar fichero
-    try {
-        $pdo = openPodcastDatabase($dbPath);
-        $pdo->exec('PRAGMA wal_checkpoint(TRUNCATE)');
-        unset($pdo);
-    } catch (Throwable) {
+    // Si fallan las instantáneas atómicas, se limpia cualquier archivo residual y se falla
+    // explícitamente para evitar generar copias corruptas o incompletas con copy().
+    if (file_exists($targetPath)) {
+        @unlink($targetPath);
     }
 
-    return copy($dbPath, $targetPath);
+    return false;
 }
 
 /**
@@ -570,23 +568,32 @@ function loadBackupsData(string $dbPath, string $projectRoot): array
             $error = __('No se encontró la base de datos para exportar.');
         } else {
             $tmpSnapshot = tempnam(sys_get_temp_dir(), 'ep_bak_');
-            if ($tmpSnapshot === false || !createDatabaseSnapshot($dbPath, $tmpSnapshot)) {
+            if ($tmpSnapshot === false) {
                 $error = __('No se pudo generar la instantánea de la base de datos.');
             } else {
+                $exported = false;
                 try {
-                    $downloadName = 'easy_podcast_backup_' . date('Ymd_His') . '.sqlite';
-                    header('Content-Type: application/octet-stream');
-                    header('Content-Disposition: attachment; filename="' . $downloadName . '"');
-                    header('Content-Length: ' . (string) filesize($tmpSnapshot));
-                    header('Cache-Control: no-store, no-cache, must-revalidate');
-                    header('Pragma: no-cache');
-                    readfile($tmpSnapshot);
+                    if (!createDatabaseSnapshot($dbPath, $tmpSnapshot)) {
+                        $error = __('No se pudo generar la instantánea de la base de datos.');
+                    } else {
+                        $downloadName = 'easy_podcast_backup_' . date('Ymd_His') . '.sqlite';
+                        header('Content-Type: application/octet-stream');
+                        header('Content-Disposition: attachment; filename="' . $downloadName . '"');
+                        header('Content-Length: ' . (string) filesize($tmpSnapshot));
+                        header('Cache-Control: no-store, no-cache, must-revalidate');
+                        header('Pragma: no-cache');
+                        readfile($tmpSnapshot);
+                        $exported = true;
+                    }
                 } finally {
                     if (file_exists($tmpSnapshot)) {
                         @unlink($tmpSnapshot);
                     }
                 }
-                exit;
+
+                if ($exported) {
+                    exit;
+                }
             }
         }
     }
