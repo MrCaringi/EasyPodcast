@@ -230,4 +230,6 @@ BEGIN
   ON CONFLICT(podcast_id, episode_id, anio) DO UPDATE SET descargas = descargas + 1;
 END;
 
-PRAGMA user_version = 27;
+PRAGMA journal_mode = WAL;
+PRAGMA synchronous = NORMAL;
+PRAGMA user_version = 28;

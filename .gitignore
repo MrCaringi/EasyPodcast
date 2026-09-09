@@ -1,5 +1,7 @@
 .gitignore
 podcast.sqlite
+podcast.sqlite-wal
+podcast.sqlite-shm
 docker/.disable_https_redirect
 AGENTS.md
 CLAUDE.md

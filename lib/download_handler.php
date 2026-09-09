@@ -69,9 +69,12 @@ function registerDownload(
             ':referer' => $referer,
         ]);
 
-        // Limpiar datos brutos de hace más de 7 días
-        $cleanup = $pdo->prepare("DELETE FROM estadisticas WHERE podcast_id = :podcast_id AND download_date < datetime('now', '-7 days')");
-        $cleanup->execute([':podcast_id' => activePodcastId($pdo)]);
+        // Limpiar datos brutos de hace más de 7 días de forma probabilística
+        // (1 de cada 100 peticiones) para evitar contención de escritura en picos.
+        if (random_int(1, 100) === 1) {
+            $cleanup = $pdo->prepare("DELETE FROM estadisticas WHERE podcast_id = :podcast_id AND download_date < datetime('now', '-7 days')");
+            $cleanup->execute([':podcast_id' => activePodcastId($pdo)]);
+        }
 
         return true;
     } catch (Throwable $e) {

@@ -11,6 +11,7 @@ require_once __DIR__ . '/cache_service.php';
 require_once __DIR__ . '/sitemap_builder.php';
 require_once __DIR__ . '/csrf.php';
 require_once __DIR__ . '/i18n.php';
+require_once __DIR__ . '/podcast_context.php';
 
 const MEDIA_PART_MAX_BYTES = 133169152; // 127 MiB
 const MEDIA_IMPORT_MAX_FILES = 2000;
@@ -512,6 +513,14 @@ function loadBackupsData(string $dbPath, string $projectRoot): array
         if (!is_file($dbPath)) {
             $error = __('No se encontró la base de datos para exportar.');
         } else {
+            try {
+                $pdo = openPodcastDatabase($dbPath);
+                $pdo->exec('PRAGMA wal_checkpoint(TRUNCATE)');
+                unset($pdo);
+            } catch (Throwable) {
+                // Proceder con el fichero actual si el checkpoint no se puede completar
+            }
+            clearstatcache(true, $dbPath);
             $downloadName = 'easy_podcast_backup_' . date('Ymd_His') . '.sqlite';
             header('Content-Type: application/octet-stream');
             header('Content-Disposition: attachment; filename="' . $downloadName . '"');

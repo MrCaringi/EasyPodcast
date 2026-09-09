@@ -1,5 +1,13 @@
 # Changelog
 
+## Siguiente release
+
+- **Concurrencia de escritura en SQLite**: activa el modo WAL (*Write-Ahead Logging*) y `synchronous = NORMAL` mediante la migración v28, permitiendo lecturas y escrituras simultáneas sin bloqueos mutuos.
+- **Tolerancia a contención (`busy_timeout`)**: configura una espera automática de hasta 5 segundos en todas las conexiones y migraciones de la base de datos para absorber picos concurrentes.
+- **Descargas y analíticas optimizadas**: `track.php` utiliza la conexión centralizada con reintentos y reduce la contención ejecutando la purga de estadísticas antiguas de forma probabilística en lugar de en cada petición.
+- **Consistencia en copias de seguridad**: la exportación de base de datos ejecuta un checkpoint TRUNCATE del log WAL antes de transmitir el fichero, garantizando una descarga íntegra y autocontenida.
+- **Exclusión de archivos temporales**: `.gitignore` y el script de despliegue excluyen los ficheros `-wal` y `-shm` de SQLite.
+
 ## 2.0.2
 
 - **Grabadora mejorada**: permite pausar y reanudar una grabación sin incluir el intervalo detenido en el contador ni en el audio final, y traduce todos sus controles y mensajes al idioma seleccionado.

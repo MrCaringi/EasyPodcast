@@ -11,6 +11,7 @@ function runMigrations(string $dbPath): void
     $pdo = new PDO('sqlite:' . $dbPath);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    $pdo->exec('PRAGMA busy_timeout = 5000');
 
     $version = (int) $pdo->query('PRAGMA user_version')->fetchColumn();
 
@@ -175,6 +176,19 @@ function runMigrations(string $dbPath): void
         $pdo->exec('PRAGMA user_version = 27');
         $version = 27;
     }
+
+    if ($version < 28) {
+        migration_v28($pdo);
+        $pdo->exec('PRAGMA user_version = 28');
+        $version = 28;
+    }
+}
+
+/** Migración v28: activa modo WAL y optimización de concurrencia en SQLite. */
+function migration_v28(PDO $pdo): void
+{
+    $pdo->exec('PRAGMA journal_mode = WAL');
+    $pdo->exec('PRAGMA synchronous = NORMAL');
 }
 
 /** Migración v27: idioma independiente para la portada y el panel Multipodcast. */

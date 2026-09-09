@@ -85,3 +85,24 @@ test('resolveAdminPodcast limita el selector a los podcasts asignados', function
     assert_eq(3, (int) (resolveAdminPodcast($pdo, 'dos')['id'] ?? 0));
     unset($_SESSION['admin_user'], $_SESSION['admin_is_global'], $_SESSION['admin_podcast_ids'], $_SESSION['active_podcast_id']);
 });
+
+test('openPodcastDatabase configura busy_timeout, foreign_keys y synchronous', function () {
+    if (!in_array('sqlite', PDO::getAvailableDrivers(), true)) { return; }
+    $tmpDb = tempnam(sys_get_temp_dir(), 'ep_test_open_');
+    try {
+        $pdo = openPodcastDatabase($tmpDb);
+        $busyTimeout = (int) $pdo->query('PRAGMA busy_timeout')->fetchColumn();
+        $foreignKeys = (int) $pdo->query('PRAGMA foreign_keys')->fetchColumn();
+        $synchronous = (int) $pdo->query('PRAGMA synchronous')->fetchColumn();
+
+        assert_eq(5000, $busyTimeout, 'Se esperaba busy_timeout = 5000');
+        assert_eq(1, $foreignKeys, 'Se esperaba foreign_keys = 1 (ON)');
+        assert_eq(1, $synchronous, 'Se esperaba synchronous = 1 (NORMAL)');
+    } finally {
+        unset($pdo);
+        if (file_exists($tmpDb)) { @unlink($tmpDb); }
+        if (file_exists($tmpDb . '-wal')) { @unlink($tmpDb . '-wal'); }
+        if (file_exists($tmpDb . '-shm')) { @unlink($tmpDb . '-shm'); }
+    }
+});
+
