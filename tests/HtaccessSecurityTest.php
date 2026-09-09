@@ -69,3 +69,26 @@ test('el manual explica cómo retirar por completo el bloqueo de admin por IP', 
     assert_contains('# END EasyPodcast: bloqueo por IP de admin.php', $manual);
     assert_contains('elimina **únicamente el bloque completo**', $manual);
 });
+
+test('htaccess bloquea podcast.sqlite y sus archivos auxiliares wal y shm', function () {
+    $contents = file_get_contents(__DIR__ . '/../.htaccess');
+    $template = file_get_contents(__DIR__ . '/../.htaccess.default');
+    assert_true(is_string($contents) && is_string($template));
+
+    preg_match('/RewriteRule \^\(\?:([^\)]+)\)\$ - \[F,L,NC\]/', $contents, $matches);
+    assert_true(!empty($matches[1]), 'No se encontró la regla de bloqueo en .htaccess');
+    $rulePattern = '#^(?:' . $matches[1] . ')$#i';
+
+    assert_matches($rulePattern, 'podcast.sqlite');
+    assert_matches($rulePattern, 'podcast.sqlite-wal');
+    assert_matches($rulePattern, 'podcast.sqlite-shm');
+
+    preg_match('/RewriteRule \^\(\?:([^\)]+)\)\$ - \[F,L,NC\]/', $template, $tplMatches);
+    assert_true(!empty($tplMatches[1]), 'No se encontró la regla de bloqueo en .htaccess.default');
+    $tplPattern = '#^(?:' . $tplMatches[1] . ')$#i';
+
+    assert_matches($tplPattern, 'podcast.sqlite');
+    assert_matches($tplPattern, 'podcast.sqlite-wal');
+    assert_matches($tplPattern, 'podcast.sqlite-shm');
+});
+

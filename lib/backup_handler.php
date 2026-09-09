@@ -497,6 +497,63 @@ function importZipIntoMedia(string $uploadedPath, string $projectRoot): array
 }
 
 /**
+ * Crea una instantánea íntegra y consistente de la base de datos SQLite.
+ * Compatible con modo WAL: captura todas las transacciones confirmadas incluso
+ * si aún residen en el fichero -wal.
+ */
+function createDatabaseSnapshot(string $dbPath, string $targetPath): bool
+{
+    if (!is_file($dbPath)) {
+        return false;
+    }
+
+    if (file_exists($targetPath)) {
+        @unlink($targetPath);
+    }
+
+    // 1. Snapshot online nativo con SQLite3::backup (API recomendada por SQLite para modo WAL)
+    if (class_exists('SQLite3')) {
+        try {
+            $sourceDb = new SQLite3($dbPath, SQLITE3_OPEN_READONLY);
+            $sourceDb->busyTimeout(5000);
+            $targetDb = new SQLite3($targetPath, SQLITE3_OPEN_READWRITE | SQLITE3_OPEN_CREATE);
+            $targetDb->busyTimeout(5000);
+            $ok = $sourceDb->backup($targetDb);
+            $sourceDb->close();
+            $targetDb->close();
+            if ($ok && file_exists($targetPath) && filesize($targetPath) > 0) {
+                return true;
+            }
+        } catch (Throwable $e) {
+            error_log('Error en SQLite3::backup snapshot: ' . $e->getMessage());
+        }
+    }
+
+    // 2. Snapshot atómico con VACUUM INTO desde PDO
+    try {
+        $pdo = openPodcastDatabase($dbPath);
+        $quoted = $pdo->quote($targetPath);
+        $pdo->exec("VACUUM INTO {$quoted}");
+        unset($pdo);
+        if (file_exists($targetPath) && filesize($targetPath) > 0) {
+            return true;
+        }
+    } catch (Throwable $e) {
+        error_log('Error en VACUUM INTO snapshot: ' . $e->getMessage());
+    }
+
+    // 3. Fallback: forzar checkpoint y copiar fichero
+    try {
+        $pdo = openPodcastDatabase($dbPath);
+        $pdo->exec('PRAGMA wal_checkpoint(TRUNCATE)');
+        unset($pdo);
+    } catch (Throwable) {
+    }
+
+    return copy($dbPath, $targetPath);
+}
+
+/**
  * Procesa las acciones GET/POST de backups y precalcula los planes de exportación.
  * Puede redirigir/salir en acciones de exportación binaria.
  *
@@ -508,27 +565,29 @@ function loadBackupsData(string $dbPath, string $projectRoot): array
     $notice = '';
 
     if (isset($_GET['action']) && $_GET['action'] === 'export_db') {
-        // Exportación directa de la base de datos actual.
-        // No crea copia persistente en servidor: transmite el fichero existente y termina.
+        // Exportación de snapshot consistente de la base de datos actual.
         if (!is_file($dbPath)) {
             $error = __('No se encontró la base de datos para exportar.');
         } else {
-            try {
-                $pdo = openPodcastDatabase($dbPath);
-                $pdo->exec('PRAGMA wal_checkpoint(TRUNCATE)');
-                unset($pdo);
-            } catch (Throwable) {
-                // Proceder con el fichero actual si el checkpoint no se puede completar
+            $tmpSnapshot = tempnam(sys_get_temp_dir(), 'ep_bak_');
+            if ($tmpSnapshot === false || !createDatabaseSnapshot($dbPath, $tmpSnapshot)) {
+                $error = __('No se pudo generar la instantánea de la base de datos.');
+            } else {
+                try {
+                    $downloadName = 'easy_podcast_backup_' . date('Ymd_His') . '.sqlite';
+                    header('Content-Type: application/octet-stream');
+                    header('Content-Disposition: attachment; filename="' . $downloadName . '"');
+                    header('Content-Length: ' . (string) filesize($tmpSnapshot));
+                    header('Cache-Control: no-store, no-cache, must-revalidate');
+                    header('Pragma: no-cache');
+                    readfile($tmpSnapshot);
+                } finally {
+                    if (file_exists($tmpSnapshot)) {
+                        @unlink($tmpSnapshot);
+                    }
+                }
+                exit;
             }
-            clearstatcache(true, $dbPath);
-            $downloadName = 'easy_podcast_backup_' . date('Ymd_His') . '.sqlite';
-            header('Content-Type: application/octet-stream');
-            header('Content-Disposition: attachment; filename="' . $downloadName . '"');
-            header('Content-Length: ' . (string) filesize($dbPath));
-            header('Cache-Control: no-store, no-cache, must-revalidate');
-            header('Pragma: no-cache');
-            readfile($dbPath);
-            exit;
         }
     }
 
@@ -610,7 +669,7 @@ function loadBackupsData(string $dbPath, string $projectRoot): array
                             $error = __('No se pudo crear el directorio de backups.');
                         } else {
                             $backupPath = $backupDir . '/podcast-before-import-' . date('Ymd_His') . '.sqlite';
-                            if (!copy($dbPath, $backupPath)) {
+                            if (!createDatabaseSnapshot($dbPath, $backupPath)) {
                                 $error = __('No se pudo crear el backup previo de seguridad.');
                             } else {
                                 $probe = null;
@@ -625,9 +684,9 @@ function loadBackupsData(string $dbPath, string $projectRoot): array
                                 if (!$importOk) {
                                     $error = __('Falló la importación de la base de datos.');
                                 } else {
-                                    $pdo = new PDO('sqlite:' . $dbPath);
-                                    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                                    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+                                    $pdo = openPodcastDatabase($dbPath);
+                                    $pdo->exec('PRAGMA wal_checkpoint(TRUNCATE)');
+                                    $pdo->exec('PRAGMA journal_mode = WAL');
 
                                     try {
                                         // Tras importar, sincroniza feed.xml/sitemap.xml con la nueva base.

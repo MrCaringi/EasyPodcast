@@ -11,9 +11,7 @@ $dbPath = getenv('PODCAST_DB_PATH') ?: __DIR__ . '/podcast.sqlite';
 enforceCanonicalHostFromPodcastLink($dbPath);
 
 try {
-    $pdo = new PDO('sqlite:' . $dbPath);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    $pdo = openPodcastDatabase($dbPath);
     $requestedSlug = isset($_GET['podcast_slug']) ? trim((string) $_GET['podcast_slug']) : null;
     $feedPodcast = resolveFeedPodcast($pdo, $requestedSlug);
     activatePodcastContext($feedPodcast, multipodcastEnabled($pdo));

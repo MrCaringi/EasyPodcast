@@ -11,8 +11,8 @@ RewriteEngine on
 RewriteCond %{DOCUMENT_ROOT}/docker/.disable_https_redirect !-f
 RewriteCond %{HTTPS} !=on [NC]
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
-# Bloquea acceso directo a archivos/rutas sensibles.
-RewriteRule ^(?:podcast\.sqlite|schema\.sql|AGENTS\.md|\.htaccess\.default)$ - [F,L,NC]
+# Bloquea acceso directo a archivos/rutas sensibles (incluyendo temporales WAL/SHM).
+RewriteRule ^(?:podcast\.sqlite.*|schema\.sql|AGENTS\.md|\.htaccess\.default)$ - [F,L,NC]
 RewriteRule ^backups(?:/|$) - [F,L,NC]
 RewriteRule ^tests(?:/|$) - [F,L,NC]
 RewriteRule ^\.git - [F,L,NC]

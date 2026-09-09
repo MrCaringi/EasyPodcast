@@ -40,3 +40,37 @@ test('validateMediaZipEntry detecta ratios de compresión peligrosos', function 
     assert_contains('compresión potencialmente peligrosa', $error);
 });
 
+test('createDatabaseSnapshot crea una copia integra incluso con transacciones en WAL', function () {
+    if (!in_array('sqlite', PDO::getAvailableDrivers(), true)) {
+        return;
+    }
+
+    $sourceDb = tempnam(sys_get_temp_dir(), 'ep_snap_src_');
+    $snapshotDb = tempnam(sys_get_temp_dir(), 'ep_snap_dst_');
+
+    try {
+        $pdo = openPodcastDatabase($sourceDb);
+        $pdo->exec('PRAGMA journal_mode = WAL');
+        $pdo->exec('CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT)');
+        $pdo->exec("INSERT INTO items VALUES (1, 'item1')");
+        $pdo->exec("INSERT INTO items VALUES (2, 'item2')");
+
+        $ok = createDatabaseSnapshot($sourceDb, $snapshotDb);
+        assert_true($ok, 'createDatabaseSnapshot devolvió false');
+        assert_true(file_exists($snapshotDb));
+
+        $checkPdo = new PDO('sqlite:' . $snapshotDb);
+        $checkPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $count = (int) $checkPdo->query('SELECT COUNT(*) FROM items')->fetchColumn();
+        assert_eq(2, $count, 'La instantánea no contiene todas las filas comprometidas');
+    } finally {
+        unset($pdo, $checkPdo);
+        foreach ([$sourceDb, $snapshotDb] as $file) {
+            if (file_exists($file)) { @unlink($file); }
+            if (file_exists($file . '-wal')) { @unlink($file . '-wal'); }
+            if (file_exists($file . '-shm')) { @unlink($file . '-shm'); }
+        }
+    }
+});
+
+

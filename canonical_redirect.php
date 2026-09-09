@@ -123,9 +123,7 @@ function enforceCanonicalHostFromPodcastLink(string $dbPath): void
     $currentScheme = isHttpsRequest() ? 'https' : 'http';
 
     try {
-        $pdo = new PDO('sqlite:' . $dbPath);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        $pdo = openPodcastDatabase($dbPath);
 
         $tableExists = (bool) $pdo
             ->query("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'podcast' LIMIT 1")

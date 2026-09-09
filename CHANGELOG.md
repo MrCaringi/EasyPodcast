@@ -3,9 +3,10 @@
 ## Siguiente release
 
 - **Concurrencia de escritura en SQLite**: activa el modo WAL (*Write-Ahead Logging*) y `synchronous = NORMAL` mediante la migración v28, permitiendo lecturas y escrituras simultáneas sin bloqueos mutuos.
-- **Tolerancia a contención (`busy_timeout`)**: configura una espera automática de hasta 5 segundos en todas las conexiones y migraciones de la base de datos para absorber picos concurrentes.
+- **Tolerancia a contención (`busy_timeout`)**: configura una espera automática de hasta 5 segundos en `openPodcastDatabase()` y en las migraciones de base de datos para absorber picos concurrentes, adoptándose en los puntos de entrada principales (`track.php`, `feed.php`, la API REST y la redirección canónica).
 - **Descargas y analíticas optimizadas**: `track.php` utiliza la conexión centralizada con reintentos y reduce la contención ejecutando la purga de estadísticas antiguas de forma probabilística en lugar de en cada petición.
-- **Consistencia en copias de seguridad**: la exportación de base de datos ejecuta un checkpoint TRUNCATE del log WAL antes de transmitir el fichero, garantizando una descarga íntegra y autocontenida.
+- **Copias de seguridad consistentes con WAL**: la exportación y el respaldo previo a importaciones generan instantáneas atómicas mediante la API nativa de backup de SQLite (o `VACUUM INTO`), garantizando copias íntegras sin omitir transacciones del fichero WAL.
+- **Protección HTTP de archivos WAL**: `.htaccess` y su plantilla bloquean el acceso a cualquier archivo derivado de la base de datos (`podcast.sqlite*`), protegiendo `podcast.sqlite-wal` y `podcast.sqlite-shm`.
 - **Exclusión de archivos temporales**: `.gitignore` y el script de despliegue excluyen los ficheros `-wal` y `-shm` de SQLite.
 
 ## 2.0.2
