@@ -6,6 +6,7 @@ require_once __DIR__ . '/canonical_redirect.php';
 require_once __DIR__ . '/lib/session.php';
 require_once __DIR__ . '/lib/view_helpers.php';
 require_once __DIR__ . '/lib/cache_service.php';
+require_once __DIR__ . '/lib/update_handler.php';
 
 startSecureSession();
 require_once __DIR__ . '/lib/csrf.php';
@@ -18,6 +19,9 @@ $dbPath = getenv('PODCAST_DB_PATH') ?: __DIR__ . '/podcast.sqlite';
 enforceCanonicalHostFromPodcastLink($dbPath);
 requireGlobalAdminAccess();
 header('X-Robots-Tag: noindex, nofollow, noarchive');
+
+// Comprobar antes de abrir otras conexiones que puedan mantener lecturas activas.
+$adminUpdateStatus = loadDailyAdminUpdateStatus($dbPath);
 
 $multipodcastDashboardPdo = openPodcastDatabase($dbPath);
 $multipodcastDashboardSettings = loadAppSettings($multipodcastDashboardPdo);
@@ -52,6 +56,14 @@ $multipodcastDashboardTheme = isset(ADMIN_THEMES[$multipodcastDashboardSettings[
     <main class="card">
       <h1><?= __('Panel de administración del Multipodcast') ?></h1>
       <p><?= __('Sesión iniciada como') ?> <strong><?= esc((string) $_SESSION['admin_user']) ?></strong>.</p>
+
+      <?php if ($adminUpdateStatus['available']): ?>
+        <div class="update-status-warning admin-update-notice">
+          <?= __('Hay una nueva versión de EasyPodcast disponible:') ?>
+          <strong>v<?= esc($adminUpdateStatus['version']) ?></strong>.
+          <a href="update.php" class="update-footer-link"><?= __('Actualizar ahora') ?></a>
+        </div>
+      <?php endif; ?>
 
       <div class="admin-cards">
         <?php

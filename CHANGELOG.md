@@ -2,6 +2,7 @@
 
 ## Siguiente release
 
+- **Aviso de actualización en Multipodcast**: el panel global comprueba diariamente las nuevas versiones y muestra el enlace para actualizar, también al llegar desde el inicio de sesión.
 - **Robustez de backups**: limpia el intento nativo fallido antes de usar `VACUUM INTO`, protege el origen frente a destinos idénticos y permite completar la limpieza temporal aunque se cancele la descarga.
 - **Concurrencia de escritura en SQLite**: activa el modo WAL (*Write-Ahead Logging*) y `synchronous = NORMAL` mediante la migración v28, permitiendo lecturas y escrituras simultáneas sin bloqueos mutuos.
 - **Tolerancia a contención (`busy_timeout`)**: configura una espera automática de hasta 5 segundos en `openPodcastDatabase()` y en las migraciones de base de datos para absorber picos concurrentes, adoptándose en los puntos de entrada principales (`track.php`, `feed.php`, la API REST y la redirección canónica).
