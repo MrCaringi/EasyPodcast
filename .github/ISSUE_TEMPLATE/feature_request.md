@@ -2,7 +2,7 @@
 name: Solicitud de Mejora
 about: Sugiere una nueva funcionalidad o mejora
 title: "🛠️ [FEATURE] Describe tu propuesta"
-labels: mejoras
+labels: feature
 assignees: 'educollado'
 ---
 
