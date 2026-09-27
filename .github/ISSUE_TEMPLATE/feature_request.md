@@ -1,0 +1,19 @@
+---
+name: Solicitud de Mejora
+about: Sugiere una nueva funcionalidad o mejora
+title: "🛠️ [FEATURE] Describe tu propuesta"
+labels: mejoras
+assignees: 'educollado'
+---
+
+## Descripción
+Explica la funcionalidad que propones.
+
+## Motivación
+¿Por qué es importante esta función? ¿Qué problema resuelve?
+
+## Alternativas consideradas
+¿Has considerado otras posibles soluciones?
+
+## Información adicional
+Añade cualquier otro detalle que ayude a entender tu solicitud.
