@@ -17,3 +17,6 @@ Explica la funcionalidad que propones.
 
 ## Información adicional
 Añade cualquier otro detalle que ayude a entender tu solicitud.
+
+## Información sensible
+No incluyas contraseñas, tokens, claves API, cookies, datos personales, archivos de base de datos ni URLs privadas. Oculta o sustituye esos datos antes de enviar la solicitud.

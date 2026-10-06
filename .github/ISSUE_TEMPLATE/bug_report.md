@@ -20,6 +20,9 @@ Describe el error de forma clara y concisa.
 ## Capturas de pantalla
 Si corresponde, añade capturas de pantalla que ayuden a explicar el problema.
 
+## Información sensible
+No incluyas contraseñas, tokens, claves API, cookies, datos personales, archivos de base de datos ni URLs privadas. Oculta o sustituye esos datos antes de enviar el reporte.
+
 ## Entorno
 - Sistema operativo:
 - Versión de la imagen de Docker:
