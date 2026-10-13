@@ -178,6 +178,7 @@ function loadPodcastManagementData(string $dbPath): array
         'owner_name'          => '',
         'owner_email'         => '',
         'category'            => '',
+        'oc_itunes_keywords'  => '',
         'explicit'            => '0',
         'image_url'           => '',
         'hero_image_url'      => '',
@@ -208,6 +209,7 @@ function loadPodcastManagementData(string $dbPath): array
               owner_name TEXT,
               owner_email TEXT,
               category TEXT,
+              oc_itunes_keywords TEXT NOT NULL DEFAULT '',
               explicit INTEGER NOT NULL DEFAULT 0,
               image_url TEXT,
               hero_image_url TEXT,
@@ -377,6 +379,7 @@ function loadPodcastManagementData(string $dbPath): array
                         ':owner_name'           => $form['owner_name'],
                         ':owner_email'          => $form['owner_email'],
                         ':category'             => $form['category'],
+                        ':oc_itunes_keywords'   => $form['oc_itunes_keywords'],
                         ':explicit'             => (int) $form['explicit'],
                         ':image_url'            => $form['image_url'],
                         ':hero_image_url'       => $form['hero_image_url'],
@@ -403,6 +406,7 @@ function loadPodcastManagementData(string $dbPath): array
                                  owner_name = :owner_name,
                                  owner_email = :owner_email,
                                  category = :category,
+                                 oc_itunes_keywords = :oc_itunes_keywords,
                                  explicit = :explicit,
                                  image_url = :image_url,
                                  hero_image_url = :hero_image_url,
@@ -424,9 +428,9 @@ function loadPodcastManagementData(string $dbPath): array
                         // Inserción inicial cuando aún no existe fila de podcast (primera configuración).
                         $stmt = $pdo->prepare(
                             'INSERT INTO podcast
-                             (title, description, link, language, author, owner_name, owner_email, category, explicit, image_url, hero_image_url, copyright, itunes_type, rss_item_limit, home_items_per_page, write_audio_metadata, cache_enabled, app_language, admin_theme, include_in_summary)
+                             (title, description, link, language, author, owner_name, owner_email, category, oc_itunes_keywords, explicit, image_url, hero_image_url, copyright, itunes_type, rss_item_limit, home_items_per_page, write_audio_metadata, cache_enabled, app_language, admin_theme, include_in_summary)
                              VALUES
-                             (:title, :description, :link, :language, :author, :owner_name, :owner_email, :category, :explicit, :image_url, :hero_image_url, :copyright, :itunes_type, :rss_item_limit, :home_items_per_page, :write_audio_metadata, :cache_enabled, :app_language, \'easypodcast\', :include_in_summary)'
+                             (:title, :description, :link, :language, :author, :owner_name, :owner_email, :category, :oc_itunes_keywords, :explicit, :image_url, :hero_image_url, :copyright, :itunes_type, :rss_item_limit, :home_items_per_page, :write_audio_metadata, :cache_enabled, :app_language, \'easypodcast\', :include_in_summary)'
                         );
                         $stmt->execute($params);
                         $savedPodcastId = (int) $pdo->lastInsertId();

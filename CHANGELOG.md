@@ -2,6 +2,7 @@
 
 ## Siguiente release
 
+- **Etiquetas para directorios**: la configuración del podcast permite definir palabras clave separadas por comas y las publica como `<itunes:keywords>` en el feed RSS, para que directorios como iVoox puedan indexarlas.
 - **Aviso de actualización en Multipodcast**: el panel global comprueba diariamente las nuevas versiones y muestra el enlace para actualizar, también al llegar desde el inicio de sesión.
 - **Robustez de backups**: limpia el intento nativo fallido antes de usar `VACUUM INTO`, protege el origen frente a destinos idénticos y permite completar la limpieza temporal aunque se cancele la descarga.
 - **Concurrencia de escritura en SQLite**: activa el modo WAL (*Write-Ahead Logging*) y `synchronous = NORMAL` mediante la migración v28, permitiendo lecturas y escrituras simultáneas sin bloqueos mutuos.

@@ -28,3 +28,18 @@ test('normalizeEnclosureMime: usa el MIME original aunque la URL de tracking no 
 
     assert_eq('audio/mpeg', $mime);
 });
+
+test('normalizeItunesKeywords: descarta elementos vacíos y conserva una lista separada por comas', function () {
+    assert_eq(
+        'MotoGP, Moto2, motociclismo',
+        normalizeItunesKeywords(' MotoGP, , Moto2 , motociclismo ')
+    );
+});
+
+test('writeItunesKeywords: emite la etiqueta itunes:keywords solo con valores', function () {
+    $xml = new XMLWriter();
+    $xml->openMemory();
+    writeItunesKeywords($xml, ' MotoGP, , Moto2 ');
+
+    assert_eq('<itunes:keywords>MotoGP, Moto2</itunes:keywords>', $xml->outputMemory());
+});

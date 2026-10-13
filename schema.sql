@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS podcast (
   owner_name TEXT,
   owner_email TEXT,
   category TEXT,
+  oc_itunes_keywords TEXT NOT NULL DEFAULT '',
   explicit INTEGER NOT NULL DEFAULT 0,
   image_url TEXT,
   hero_image_url TEXT,
@@ -232,4 +233,4 @@ END;
 
 PRAGMA journal_mode = WAL;
 PRAGMA synchronous = NORMAL;
-PRAGMA user_version = 28;
+PRAGMA user_version = 29;

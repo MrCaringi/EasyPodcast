@@ -182,6 +182,21 @@ function runMigrations(string $dbPath): void
         $pdo->exec('PRAGMA user_version = 28');
         $version = 28;
     }
+
+    if ($version < 29) {
+        migration_v29($pdo);
+        $pdo->exec('PRAGMA user_version = 29');
+        $version = 29;
+    }
+}
+
+/** Migración v29: palabras clave opcionales para directorios que las consumen. */
+function migration_v29(PDO $pdo): void
+{
+    $columns = array_column($pdo->query('PRAGMA table_info(podcast)')->fetchAll(), 'name');
+    if (!in_array('oc_itunes_keywords', $columns, true)) {
+        $pdo->exec("ALTER TABLE podcast ADD COLUMN oc_itunes_keywords TEXT NOT NULL DEFAULT ''");
+    }
 }
 
 /** Migración v28: activa modo WAL y optimización de concurrencia en SQLite. */

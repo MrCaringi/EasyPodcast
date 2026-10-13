@@ -1376,6 +1376,12 @@ msgstr ""
 msgid "Añadir categoría..."
 msgstr ""
 
+msgid "Palabras clave (iTunes/iVoox)"
+msgstr ""
+
+msgid "Sepáralas por comas. Se publican en el feed como itunes:keywords."
+msgstr ""
+
 msgid "Blog / Web personal"
 msgstr ""
 

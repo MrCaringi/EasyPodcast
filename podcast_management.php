@@ -280,6 +280,11 @@ extract($data);  // form, error, notice
               <input type="hidden" name="category" id="category-hidden" value="<?= esc($form['category']) ?>">
             </div>
           </div>
+          <label>
+            <?= __('Palabras clave (iTunes/iVoox)') ?>
+            <input type="text" name="oc_itunes_keywords" value="<?= esc($form['oc_itunes_keywords']) ?>" maxlength="255">
+            <small><?= __('Sepáralas por comas. Se publican en el feed como itunes:keywords.') ?></small>
+          </label>
           <label class="align-start">
             <?= __('Explícito') ?>
             <select name="explicit">

@@ -1376,6 +1376,12 @@ msgstr "(màx. 3 — Apple Podcasts)"
 msgid "Añadir categoría..."
 msgstr "Afegir categoria..."
 
+msgid "Palabras clave (iTunes/iVoox)"
+msgstr "Paraules clau (iTunes/iVoox)"
+
+msgid "Sepáralas por comas. Se publican en el feed como itunes:keywords."
+msgstr "Separeu-les amb comes. Es publiquen al feed com a itunes:keywords."
+
 msgid "Blog / Web personal"
 msgstr "Blog / Web personal"
 

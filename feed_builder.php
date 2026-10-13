@@ -56,6 +56,23 @@ function writeTextIfNotEmpty(XMLWriter $xml, string $name, ?string $value): void
     $xml->writeElement($name, $value);
 }
 
+/** Normaliza una lista de palabras clave separadas por comas para el feed. */
+function normalizeItunesKeywords(?string $value): string
+{
+    $keywords = array_filter(
+        array_map('trim', explode(',', (string) $value)),
+        static fn (string $keyword): bool => $keyword !== ''
+    );
+
+    return implode(', ', $keywords);
+}
+
+/** Escribe las palabras clave de directorios si se ha configurado alguna. */
+function writeItunesKeywords(XMLWriter $xml, ?string $value): void
+{
+    writeTextIfNotEmpty($xml, 'itunes:keywords', normalizeItunesKeywords($value));
+}
+
 /**
  * Infiere el MIME de audio por la extensión de la URL cuando el MIME almacenado es genérico.
  * Devuelve null si la extensión no es reconocida.
@@ -312,6 +329,9 @@ function buildPodcastFeedXml(PDO $pdo, string $selfHref): string
             $xml->endElement();
         }
     }
+
+    // Ivoox y otros directorios aún usan este campo para indexar etiquetas.
+    writeItunesKeywords($xml, $podcast['oc_itunes_keywords'] ?? null);
 
     if (!empty($podcast['image_url'])) {
         $xml->startElement('itunes:image');
