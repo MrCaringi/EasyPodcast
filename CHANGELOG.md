@@ -1,6 +1,6 @@
 # Changelog
 
-## Siguiente release
+## 2.0.3
 
 - **Etiquetas para directorios**: la configuración del podcast permite definir palabras clave separadas por comas y las publica como `<itunes:keywords>` en el feed RSS, para que directorios como iVoox puedan indexarlas.
 - **Aviso de actualización en Multipodcast**: el panel global comprueba diariamente las nuevas versiones y muestra el enlace para actualizar, también al llegar desde el inicio de sesión.
