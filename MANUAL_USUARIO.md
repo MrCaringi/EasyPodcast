@@ -63,6 +63,7 @@ Abre **Administración > Podcast**. Los datos de esta pantalla se usan tanto en 
 - **Idioma del panel:** idioma de la interfaz administrativa y de las páginas públicas.
 - **Autor, propietario y email:** información editorial incluida en el feed.
 - **Categorías:** se pueden seleccionar hasta tres categorías compatibles con Apple Podcasts.
+- **Palabras clave (iTunes/iVoox):** términos o frases opcionales separados por comas. EasyPodcast los publica como `itunes:keywords` en el feed RSS para los directorios compatibles; usa palabras relevantes y evita repetirlas.
 - **Explícito:** indica si el contenido general del podcast es explícito.
 - **Tipo iTunes:** define si el podcast es episódico o serial.
 - **Copyright:** texto legal mostrado en el feed.
@@ -191,7 +192,7 @@ Puedes ordenar las tablas pulsando sus cabeceras. Las peticiones de comprobació
 
 ## 9. Copias de seguridad
 
-Abre **Administración > Backups**. EasyPodcast separa la copia de la base de datos de la copia de los archivos multimedia.
+Abre **Administración > Backups**. EasyPodcast separa la copia de la base de datos de la copia de los archivos multimedia. La exportación de la base de datos crea una instantánea coherente de SQLite, incluso cuando el modo WAL está activo y hay actividad en el sitio.
 
 ### Crear una copia completa
 
@@ -331,6 +332,8 @@ Revoca inmediatamente un token que ya no se use o que pueda haberse expuesto. Lo
 5. Lee las novedades mostradas y comprueba la portada, el panel, un capítulo, el feed y el sitemap.
 
 El actualizador descarga la versión desde GitHub Releases, verifica su integridad y sustituye los archivos de la aplicación. No modifica la base de datos, los audios ni las imágenes directamente; las migraciones necesarias se aplican automáticamente al cargar la aplicación.
+
+En una instalación Multipodcast, el panel global comprueba diariamente si hay una versión nueva y muestra el enlace de actualización, también al acceder después de iniciar sesión.
 
 ## 15. Qué publica EasyPodcast
 

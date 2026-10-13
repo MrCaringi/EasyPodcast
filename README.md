@@ -1,6 +1,6 @@
 # EasyPodcast
 
-[![Versión](https://img.shields.io/badge/versión-2.0.2-blue)](https://github.com/educollado/EasyPodcast/releases/latest)
+[![Versión](https://img.shields.io/badge/versión-2.0.3-blue)](https://github.com/educollado/EasyPodcast/releases/latest)
 [![PHP](https://img.shields.io/badge/PHP-8%2B-777BB4?logo=php&logoColor=white)](https://www.php.net/)
 [![SQLite](https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![Docker](https://img.shields.io/badge/Docker-ghcr.io-2496ED?logo=docker&logoColor=white)](https://github.com/educollado/EasyPodcast/pkgs/container/easypodcast)
@@ -102,10 +102,10 @@ docker run -d \
   -v $(pwd)/data/audios:/var/www/html/audios \
   -v $(pwd)/data/images:/var/www/html/images \
   -v $(pwd)/data/cache:/var/www/html/cache \
-  ghcr.io/educollado/easypodcast:2.0.2
+  ghcr.io/educollado/easypodcast:2.0.3
 ```
 
-La etiqueta `2.0.2` fija esta release; usa `latest` si prefieres seguir automáticamente la versión estable más reciente. Ambas imágenes se publican para `linux/amd64` y `linux/arm64` sobre una base PHP/Apache fijada a una versión concreta, no sobre una etiqueta flotante. Así las actualizaciones de seguridad del contenedor pasan a ser cambios explícitos y revisables.
+La etiqueta `2.0.3` fija esta release; usa `latest` si prefieres seguir automáticamente la versión estable más reciente. Ambas imágenes se publican para `linux/amd64` y `linux/arm64` sobre una base PHP/Apache fijada a una versión concreta, no sobre una etiqueta flotante. Así las actualizaciones de seguridad del contenedor pasan a ser cambios explícitos y revisables.
 
 ---
 
@@ -131,6 +131,7 @@ Multipodcast tiene un idioma independiente para la portada-resumen y el panel gl
 
 - `feed.php` genera el RSS en tiempo real; `feed.xml` se regenera automáticamente tras cada cambio.
 - `rss_item_limit`: número máximo de episodios en el feed (`0` = sin límite).
+- Las **palabras clave (iTunes/iVoox)** se introducen separadas por comas en la configuración del podcast y se publican como `itunes:keywords` para los directorios compatibles.
 - `home_items_per_page`: episodios por página en portada y búsqueda (mínimo 1, por defecto 20).
 - La publicación programada usa la hora local configurada en PHP y se activa en la siguiente petición web; los administradores pueden previsualizar episodios `scheduled` antes de su publicación.
 - Las imágenes incluidas en el contenido importado se adaptan al ancho del episodio sin deformarse, aunque el feed indique dimensiones fijas.
@@ -281,6 +282,8 @@ Y actualiza `schema.sql` con `PRAGMA user_version = 27`.
 | 25 | Permite decidir qué podcasts aparecen en la portada-resumen |
 | 26 | Añade usuarios de podcast, asignaciones múltiples y permisos heredados por los tokens API |
 | 27 | Añade un idioma independiente para la portada y el panel global Multipodcast |
+| 28 | Activa el modo WAL y la optimización de concurrencia de SQLite |
+| 29 | Añade `oc_itunes_keywords` al podcast para publicar palabras clave en directorios RSS |
 
 ---
 
